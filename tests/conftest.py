@@ -1,5 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
+
 from app.main import app
 
 
@@ -27,23 +28,21 @@ def test_user_data():
         "name": "Test User",
         "email": "test@example.com",
         "password": "testpassword2",
-        "role": "student"
+        "role": "student",
     }
 
 
 @pytest.fixture
 def test_asset_data():
-    return {
-        "title": "Test Asset",
-        "inv_id": "TEST_INV_ID"
-    }
+    return {"title": "Test Asset", "inv_id": "TEST_INV_ID"}
 
 
 @pytest.fixture
 def test_checkout_data():
     from datetime import datetime, timedelta
+
     return {
         "asset_id": 1,
         "due_at": (datetime.utcnow() + timedelta(days=7)).isoformat(),
-        "status": "active"
+        "status": "active",
     }

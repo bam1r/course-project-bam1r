@@ -1,7 +1,7 @@
 from fastapi import Header, HTTPException
 from pydantic import BaseModel
 
-from .models.user import UserRole
+from app.models.user import UserRole
 
 
 class CurrentUser(BaseModel):
@@ -26,4 +26,3 @@ def ensure_owner_or_admin(owner_id: int, current_user: CurrentUser) -> None:
         return
     if current_user.id != owner_id:
         raise HTTPException(403, "You can only access your own resources")
-

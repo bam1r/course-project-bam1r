@@ -22,7 +22,9 @@ class User(BaseModel):
 class UserCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100, description="User full name")
     email: EmailStr = Field(..., description="User email address")
-    password: str = Field(..., min_length=8, max_length=128, description="User password")
+    password: str = Field(
+        ..., min_length=8, max_length=128, description="User password"
+    )
     role: UserRole
 
     @field_validator("name")

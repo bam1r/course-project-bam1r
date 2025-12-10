@@ -54,7 +54,6 @@ class TestUserCRUD:
         response = client.get("/users", headers=user_headers)
         assert response.status_code == 403
 
-
     def test_get_nonexistent_user(self, client, admin_headers):
         """Получение несуществующего пользователя"""
         response = client.get("/users/999", headers=admin_headers)
@@ -80,7 +79,11 @@ class TestAssetCRUD:
     def test_get_assets_no_auth(self, client, test_asset_data):
         """Получение активов не требует аутентификации"""
         # Сначала создаем актив (нужен админ)
-        client.post("/assets", json=test_asset_data, headers={"X-User-Id": "1", "X-User-Role": "admin"})
+        client.post(
+            "/assets",
+            json=test_asset_data,
+            headers={"X-User-Id": "1", "X-User-Role": "admin"},
+        )
 
         # Получаем без аутентификации
         response = client.get("/assets")
@@ -94,7 +97,7 @@ class TestAssetCRUD:
         create_response = client.post(
             "/assets",
             json=test_asset_data,
-            headers={"X-User-Id": "1", "X-User-Role": "admin"}
+            headers={"X-User-Id": "1", "X-User-Role": "admin"},
         )
         asset_id = create_response.json()["id"]
 
@@ -106,7 +109,9 @@ class TestAssetCRUD:
     def test_delete_asset(self, client, admin_headers, test_asset_data):
         """Удаление актива"""
         # Создаем
-        create_response = client.post("/assets", json=test_asset_data, headers=admin_headers)
+        create_response = client.post(
+            "/assets", json=test_asset_data, headers=admin_headers
+        )
         asset_id = create_response.json()["id"]
 
         # Удаляем
@@ -126,23 +131,28 @@ class TestCheckoutCRUD:
         """Настройка тестовых данных перед каждым тестом"""
         # Очищаем базу данных
         from app.main import _DB
+
         _DB["assets"].clear()
         _DB["checkouts"].clear()
         _DB["users"].clear()
 
-    def test_create_checkout(self, client, user_headers, test_asset_data, test_checkout_data):
+    def test_create_checkout(
+        self, client, user_headers, test_asset_data, test_checkout_data
+    ):
         """Создание аренды"""
         # Создаем актив (нужен админ)
         asset_response = client.post(
             "/assets",
             json=test_asset_data,
-            headers={"X-User-Id": "1", "X-User-Role": "admin"}
+            headers={"X-User-Id": "1", "X-User-Role": "admin"},
         )
         asset_id = asset_response.json()["id"]
 
         # Создаем аренду
         test_checkout_data["asset_id"] = asset_id
-        response = client.post("/checkouts", json=test_checkout_data, headers=user_headers)
+        response = client.post(
+            "/checkouts", json=test_checkout_data, headers=user_headers
+        )
 
         assert response.status_code == 201
         data = response.json()
@@ -150,33 +160,41 @@ class TestCheckoutCRUD:
         assert data["status"] == "active"
         assert data["owner_id"] == 2  # ID из user_headers
 
-    def test_create_checkout_duplicate_asset(self, client, user_headers, test_asset_data, test_checkout_data):
+    def test_create_checkout_duplicate_asset(
+        self, client, user_headers, test_asset_data, test_checkout_data
+    ):
         """Нельзя создать две активные аренды на один актив"""
         # Создаем актив
         asset_response = client.post(
             "/assets",
             json=test_asset_data,
-            headers={"X-User-Id": "1", "X-User-Role": "admin"}
+            headers={"X-User-Id": "1", "X-User-Role": "admin"},
         )
         asset_id = asset_response.json()["id"]
 
         # Первая аренда
         test_checkout_data["asset_id"] = asset_id
-        response1 = client.post("/checkouts", json=test_checkout_data, headers=user_headers)
+        response1 = client.post(
+            "/checkouts", json=test_checkout_data, headers=user_headers
+        )
         assert response1.status_code == 201
 
         # Вторая аренда на тот же актив
-        response2 = client.post("/checkouts", json=test_checkout_data, headers=user_headers)
+        response2 = client.post(
+            "/checkouts", json=test_checkout_data, headers=user_headers
+        )
         assert response2.status_code == 409
         assert "already checked out" in response2.json()["detail"]
 
-    def test_create_checkout_invalid_status(self, client, user_headers, test_asset_data):
+    def test_create_checkout_invalid_status(
+        self, client, user_headers, test_asset_data
+    ):
         """Нельзя создать аренду с невалидным статусом"""
         # Создаем актив
         asset_response = client.post(
             "/assets",
             json=test_asset_data,
-            headers={"X-User-Id": "1", "X-User-Role": "admin"}
+            headers={"X-User-Id": "1", "X-User-Role": "admin"},
         )
         asset_id = asset_response.json()["id"]
 
@@ -184,26 +202,34 @@ class TestCheckoutCRUD:
         invalid_checkout = {
             "asset_id": asset_id,
             "due_at": (datetime.utcnow() + timedelta(days=7)).isoformat(),
-            "status": "returned"  # нельзя начинать с returned
+            "status": "returned",  # нельзя начинать с returned
         }
 
-        response = client.post("/checkouts", json=invalid_checkout, headers=user_headers)
+        response = client.post(
+            "/checkouts", json=invalid_checkout, headers=user_headers
+        )
         assert response.status_code == 400
 
-    def test_create_checkout_nonexistent_asset(self, client, user_headers, test_checkout_data):
+    def test_create_checkout_nonexistent_asset(
+        self, client, user_headers, test_checkout_data
+    ):
         """Нельзя создать аренду на несуществующий актив"""
         test_checkout_data["asset_id"] = 999  # несуществующий ID
 
-        response = client.post("/checkouts", json=test_checkout_data, headers=user_headers)
+        response = client.post(
+            "/checkouts", json=test_checkout_data, headers=user_headers
+        )
         assert response.status_code == 404
 
-    def test_get_my_checkouts(self, client, user_headers, test_asset_data, test_checkout_data):
+    def test_get_my_checkouts(
+        self, client, user_headers, test_asset_data, test_checkout_data
+    ):
         """Пользователь видит только свои аренды"""
         # Создаем актив
         asset_response = client.post(
             "/assets",
             json=test_asset_data,
-            headers={"X-User-Id": "1", "X-User-Role": "admin"}
+            headers={"X-User-Id": "1", "X-User-Role": "admin"},
         )
         asset_id = asset_response.json()["id"]
 
@@ -222,20 +248,23 @@ class TestCheckoutCRUD:
         assert len(checkouts) == 1
         assert checkouts[0]["owner_id"] == 2
 
-
-    def test_get_checkout_by_id(self, client, user_headers, test_asset_data, test_checkout_data):
+    def test_get_checkout_by_id(
+        self, client, user_headers, test_asset_data, test_checkout_data
+    ):
         """Получение аренды по ID"""
         # Создаем актив
         asset_response = client.post(
             "/assets",
             json=test_asset_data,
-            headers={"X-User-Id": "1", "X-User-Role": "admin"}
+            headers={"X-User-Id": "1", "X-User-Role": "admin"},
         )
         asset_id = asset_response.json()["id"]
 
         # Создаем аренду
         test_checkout_data["asset_id"] = asset_id
-        create_response = client.post("/checkouts", json=test_checkout_data, headers=user_headers)
+        create_response = client.post(
+            "/checkouts", json=test_checkout_data, headers=user_headers
+        )
         checkout_id = create_response.json()["id"]
 
         # Получаем по ID
@@ -243,13 +272,15 @@ class TestCheckoutCRUD:
         assert response.status_code == 200
         assert response.json()["id"] == checkout_id
 
-    def test_get_other_users_checkout(self, client, user_headers, test_asset_data, test_checkout_data):
+    def test_get_other_users_checkout(
+        self, client, user_headers, test_asset_data, test_checkout_data
+    ):
         """Нельзя получить чужую аренду"""
         # Создаем актив
         asset_response = client.post(
             "/assets",
             json=test_asset_data,
-            headers={"X-User-Id": "1", "X-User-Role": "admin"}
+            headers={"X-User-Id": "1", "X-User-Role": "admin"},
         )
         asset_id = asset_response.json()["id"]
 
@@ -258,7 +289,7 @@ class TestCheckoutCRUD:
         create_response = client.post(
             "/checkouts",
             json=test_checkout_data,
-            headers={"X-User-Id": "3", "X-User-Role": "student"}
+            headers={"X-User-Id": "3", "X-User-Role": "student"},
         )
         checkout_id = create_response.json()["id"]
 
@@ -272,7 +303,7 @@ class TestCheckoutCRUD:
         asset_response = client.post(
             "/assets",
             json=test_asset_data,
-            headers={"X-User-Id": "1", "X-User-Role": "admin"}
+            headers={"X-User-Id": "1", "X-User-Role": "admin"},
         )
         asset_id = asset_response.json()["id"]
 
@@ -280,18 +311,22 @@ class TestCheckoutCRUD:
         checkout_data = {
             "asset_id": asset_id,
             "due_at": (datetime.utcnow() + timedelta(days=7)).isoformat(),
-            "status": "active"
+            "status": "active",
         }
-        create_response = client.post("/checkouts", json=checkout_data, headers=user_headers)
+        create_response = client.post(
+            "/checkouts", json=checkout_data, headers=user_headers
+        )
         checkout_id = create_response.json()["id"]
 
         # Обновляем на returned
         update_data = {
             "asset_id": asset_id,
             "due_at": (datetime.utcnow() + timedelta(days=7)).isoformat(),
-            "status": "returned"
+            "status": "returned",
         }
-        response = client.put(f"/checkouts/{checkout_id}", json=update_data, headers=user_headers)
+        response = client.put(
+            f"/checkouts/{checkout_id}", json=update_data, headers=user_headers
+        )
         assert response.status_code == 200
         assert response.json()["status"] == "returned"
 
@@ -301,7 +336,7 @@ class TestCheckoutCRUD:
         asset_response = client.post(
             "/assets",
             json=test_asset_data,
-            headers={"X-User-Id": "1", "X-User-Role": "admin"}
+            headers={"X-User-Id": "1", "X-User-Role": "admin"},
         )
         asset_id = asset_response.json()["id"]
 
@@ -309,16 +344,20 @@ class TestCheckoutCRUD:
         checkout_data = {
             "asset_id": asset_id,
             "due_at": (datetime.utcnow() + timedelta(days=7)).isoformat(),
-            "status": "active"
+            "status": "active",
         }
-        create_response = client.post("/checkouts", json=checkout_data, headers=user_headers)
+        create_response = client.post(
+            "/checkouts", json=checkout_data, headers=user_headers
+        )
         checkout_id = create_response.json()["id"]
 
         # Пробуем обновить на active (повторно) - нельзя
         update_data = {
             "asset_id": asset_id,
             "due_at": (datetime.utcnow() + timedelta(days=7)).isoformat(),
-            "status": "active"
+            "status": "active",
         }
-        response = client.put(f"/checkouts/{checkout_id}", json=update_data, headers=user_headers)
+        response = client.put(
+            f"/checkouts/{checkout_id}", json=update_data, headers=user_headers
+        )
         assert response.status_code == 400

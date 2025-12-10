@@ -34,7 +34,6 @@ class CheckoutCreate(BaseModel):
             raise ValueError("Asset ID must be a positive integer")
         return v
 
-
     @field_validator("due_at")
     @classmethod
     def normalize_datetime(cls, v: datetime) -> datetime:
@@ -79,4 +78,3 @@ def can_transition(
         # Fresh checkout must always start as active per business rules.
         return next_status == CheckoutStatus.active
     return next_status in ALLOWED_STATUS_TRANSITIONS.get(current_status, set())
-

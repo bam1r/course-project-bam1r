@@ -12,7 +12,9 @@ class Asset(BaseModel):
 
 
 class AssetCreate(BaseModel):
-    title: str = Field(..., min_length=1, max_length=200, description="Asset title/name")
+    title: str = Field(
+        ..., min_length=1, max_length=200, description="Asset title/name"
+    )
     inv_id: str = Field(..., min_length=1, max_length=50, description="Inventory ID")
 
     @field_validator("title")
@@ -38,7 +40,10 @@ class AssetCreate(BaseModel):
         # Validate format: alphanumeric with optional dashes/underscores
         # Example: INV-001, ASSET_123, ABC-123-XYZ
         if not re.match(r"^[A-Z0-9\-_]+$", v):
-            raise ValueError("Inventory ID must contain only uppercase letters, numbers, dashes, and underscores")
+            raise ValueError(
+                "Inventory ID must contain only uppercase letters, numbers, dashes,"
+                " and underscores"
+            )
         if len(v) < 3:
             raise ValueError("Inventory ID must be at least 3 characters long")
         return v
@@ -48,4 +53,3 @@ class AssetOut(BaseModel):
     id: int
     title: str
     inv_id: str
-
